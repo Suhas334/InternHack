@@ -78,15 +78,19 @@ export default function AdminRepoRequestsPage() {
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [domainFilter, setDomainFilter] = useState("ALL");
+  const [difficultyFilter, setDifficultyFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/opensource/requests/all", {
-        params: { status: statusFilter, page, limit: 20 },
-      });
+      const params: Record<string, any> = { status: statusFilter, page, limit: 20 };
+      if (domainFilter !== "ALL") params.domain = domainFilter;
+      if (difficultyFilter !== "ALL") params.difficulty = difficultyFilter;
+
+      const res = await api.get("/opensource/requests/all", { params });
       setRequests(res.data.requests);
       setPagination(res.data.pagination);
     } catch {
@@ -97,11 +101,11 @@ export default function AdminRepoRequestsPage() {
   };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setPage(1); }, [statusFilter]);
+  useEffect(() => { setPage(1); }, [statusFilter, domainFilter, difficultyFilter]);
   // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
-  useEffect(() => { fetchRequests(); }, [statusFilter, page]);
+  useEffect(() => { fetchRequests(); }, [statusFilter, domainFilter, difficultyFilter, page]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setSelectedIds([]); }, [statusFilter, page]);
+  useEffect(() => { setSelectedIds([]); }, [statusFilter, domainFilter, difficultyFilter, page]);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) =>
@@ -172,19 +176,44 @@ export default function AdminRepoRequestsPage() {
         <GitPullRequest className="w-6 h-6" /> Repo Requests
       </h1>
 
-      {/* Status Tabs */}
-      <div className="flex gap-2 mb-6">
-        {statusTabs.map((s) => (
-          <button key={s} onClick={() => setStatusFilter(s)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              statusFilter === s ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-            }`}>
-            {s}
-            {pagination && statusFilter === s && (
-              <span className="ml-1.5 text-xs opacity-70">({pagination.total})</span>
-            )}
-          </button>
-        ))}
+      {/* Filters Header */}
+      <div className="flex flex-wrap items-center gap-4 mb-6 justify-between">
+        <div className="flex gap-2">
+          {statusTabs.map((s) => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                statusFilter === s ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+              }`}>
+              {s}
+              {pagination && statusFilter === s && (
+                <span className="ml-1.5 text-xs opacity-70">({pagination.total})</span>
+              )}
+            </button>
+          ))}
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <select
+            value={domainFilter}
+            onChange={(e) => setDomainFilter(e.target.value)}
+            className="bg-gray-800 border border-gray-700 text-gray-300 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block px-3 py-2 outline-none cursor-pointer"
+          >
+            <option value="ALL">All Domains</option>
+            {DOMAIN_OPTIONS.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+          <select
+            value={difficultyFilter}
+            onChange={(e) => setDifficultyFilter(e.target.value)}
+            className="bg-gray-800 border border-gray-700 text-gray-300 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block px-3 py-2 outline-none cursor-pointer"
+          >
+            <option value="ALL">All Difficulties</option>
+            {DIFFICULTY_OPTIONS.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {statusFilter === "PENDING" && requests.length > 0 && (

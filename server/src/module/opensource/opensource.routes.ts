@@ -1,4 +1,4 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import { prisma } from "../../database/db.js";
 import {
   approveRequestOverrideSchema,
@@ -182,10 +182,18 @@ opensourceRouter.get("/requests/all", authMiddleware, requireRole("ADMIN"), asyn
   try {
     const { page, limit, skip } = parsePagination(req);
     const status = req.query.status as string | undefined;
+    const domain = req.query.domain as string | undefined;
+    const difficulty = req.query.difficulty as string | undefined;
 
     const where: Record<string, unknown> = {};
     if (status && ["PENDING", "APPROVED", "REJECTED"].includes(status)) {
       where.status = status;
+    }
+    if (domain && ["AI", "WEB", "DEVOPS", "MOBILE", "BLOCKCHAIN", "DATA", "SECURITY", "CLOUD", "GAMING", "OTHER"].includes(domain)) {
+      where.domain = domain;
+    }
+    if (difficulty && ["BEGINNER", "INTERMEDIATE", "ADVANCED"].includes(difficulty)) {
+      where.difficulty = difficulty;
     }
 
     const [requests, total] = await Promise.all([
